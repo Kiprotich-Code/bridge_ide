@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
+from pydantic import BaseModel, field_validator
+from typing import Optional, List, Dict, Any, Union
 from datetime import datetime
 
 
@@ -50,14 +50,24 @@ class AuthResponse(BaseModel):
 class GenerateRequest(BaseModel):
     """Request to generate a new project from prompt"""
     prompt: str
-    user_id: any
+    user_id: Union[str, int]  # Accept both string and integer
+    
+    @field_validator('user_id', mode='before')
+    @classmethod
+    def convert_user_id(cls, v):
+        return str(v)  # Always convert to string
 
 
 class RefineRequest(BaseModel):
     """Request to refine an existing project"""
     project_id: str
     feedback: str
-    user_id: any
+    user_id: Union[str, int]  # Accept both string and integer
+    
+    @field_validator('user_id', mode='before')
+    @classmethod
+    def convert_user_id(cls, v):
+        return str(v)  # Always convert to string
 
 
 class ExecuteRequest(BaseModel):
@@ -75,13 +85,18 @@ class ConversationMessage(BaseModel):
 class ProjectState(BaseModel):
     """Complete state of a project"""
     project_id: Optional[str] = None
-    user_id: any
+    user_id: Union[str, int]  # Accept both string and integer
     original_prompt: str
     iteration_count: int = 0
     conversation_history: List[ConversationMessage] = []
     current_files: Dict[str, str] = {}
     user_feedback: Optional[str] = None
     status: str = "generating"  # "generating", "completed", "error"
+    
+    @field_validator('user_id', mode='before')
+    @classmethod
+    def convert_user_id(cls, v):
+        return str(v)  # Always convert to string
 
 
 class SSEInitEvent(BaseModel):
