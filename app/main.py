@@ -127,5 +127,7 @@ if __name__ == "__main__":
         "app.main:app",
         host="0.0.0.0",
         port=8000,
-        reload=settings.DEBUG
+        reload=settings.DEBUG,
+        timeout_keep_alive=300,  # Keep connections alive for 5 minutes for long SSE streams
+        timeout_graceful_shutdown=30  # Allow 30 seconds for graceful shutdown
     )
