@@ -1,89 +1,3 @@
-# from langchain_core.prompts import ChatPromptTemplate
-# from langchain_core.pydantic_v1 import BaseModel, Field
-# from typing import List, Dict
-# from app.services.llm import get_llm
-# from app.graph.state import ProjectState
-# import json
-
-# class CodeFile(BaseModel):
-#     filename: str = Field(description="The path and filename")
-#     content: str = Field(description="The complete code content")
-
-# class ProjectCode(BaseModel):
-#     files: List[CodeFile] = Field(description="List of all generated files")
-
-# async def code_generator_agent(state: ProjectState):
-#     """
-#     Generates the actual code for the project.
-#     """
-#     design_spec = state.get("design_spec")
-#     classification = state.get("classification")
-    
-#     # If no design spec (simple path), we might generate on the fly, but for now assuming Design Agent ran.
-#     # If Design Agent didn't run (Experienced path), we simulate design or just ask for code directly.
-    
-#     file_list = []
-#     if design_spec:
-#         # ✅ REPLACE LINE 27 WITH THIS:
-#         file_structure = design_spec.get('file_structure', [])
-#         if file_structure and isinstance(file_structure[0], dict):
-#             # It's a list of dicts - use .get()
-#             file_list = [f.get('filename') or f.get('path') for f in file_structure]
-#         else:
-#             # It's a list of objects - use .filename
-#             file_list = [f.filename for f in file_structure]
-        
-#     llm = get_llm(temperature=0.1) # Low temp for code
-#     # context window management: if too many files, might need multiple calls.
-#     # For now, we attempt single pass for typical "demo" size apps.
-    
-#     structured_llm = llm.with_structured_output(ProjectCode)
-    
-#     system_prompt = """You are an Expert React Developer.
-#     Generate the strictly working code for the requested project.
-    
-#     Technology Stack: React, Tailwind CSS (via CDN or standard config), Vite (implied structure).
-    
-#     Requirements:
-#     1. Output VALID code for every file.
-#     2. Ensure NO placeholders.
-#     3. Project Structure:
-#        - `package.json`: keys "type": "module", dependencies: react, react-dom, vite, @vitejs/plugin-react, tailwindcss, autoprefixer, postcss.
-#        - `vite.config.js`: use `export default defineConfig({ ... })`.
-#        - `postcss.config.js`: use `export default { plugins: { ... } }` (ESM syntax).
-#        - `tailwind.config.js`: use `export default { ... }` (ESM syntax).
-#        - `index.html`: element with id="root", script type="module" src="/src/main.jsx".
-#        - `src/index.css`: `@tailwind base; @tailwind components; @tailwind utilities;`.
-#        - `src/main.jsx`: 
-#          - Must `import './index.css'` (or appropriate CSS path).
-#          - Render App component to root.
-
-#     Files to generate:
-#     {file_list}
-    
-#     Make sure components export correctly and import correctly.
-#     """
-    
-#     prompt_template = ChatPromptTemplate.from_messages([
-#         ("system", system_prompt),
-#         ("human", "Design Spec: {design_spec}\n\nGenerate the code.")
-#     ])
-    
-#     chain = prompt_template | structured_llm
-    
-#     input_data = {
-#         "file_list": ", ".join(file_list) if file_list else "Standard React App structure",
-#         "design_spec": json.dumps(design_spec) if design_spec else "Create a standard robust app."
-#     }
-    
-#     result = await chain.ainvoke(input_data)
-    
-#     current_files = {f.filename: f.content for f in result.files}
-    
-#     return {"current_files": current_files}
-
-
-
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 
@@ -129,56 +43,28 @@ async def code_generator_agent(state: ProjectState):
     structured_llm = llm.with_structured_output(ProjectCode, method="json_schema")
     
     # ✅ MOBILE-FIRST: Enhanced prompt for phone IDE
-    system_prompt = """IMPORTANT: Return a single JSON object strictly conforming to the ProjectCode schema. No extra commentary or explanation — only JSON.
-    You are an Expert React Developer specializing in MOBILE-FIRST applications.
-    Generate strictly working code for a PHONE IDE environment.
-    
-    Technology Stack: React, Tailwind CSS, Vite"
-    
-    CRITICAL MOBILE-FIRST REQUIREMENTS:
-    1. ALL components MUST use mobile-first Tailwind classes
-    2. Start with mobile layout (no prefix), then add md: and lg: breakpoints
-    3. Use responsive patterns:
-       - Typography: "text-sm md:text-base lg:text-lg"
-       - Spacing: "p-4 md:p-6 lg:p-8"
-       - Grid: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-       - Flex: "flex-col md:flex-row"
-    4. Touch-friendly sizing: buttons min-h-[44px], tap targets min 44px
-    5. Readable mobile text: minimum text-base (16px)
-    6. Full viewport: use "min-h-screen" for main containers
-    7. Mobile padding: use "px-4" or "container mx-auto px-4"
-    
-    Project Structure Requirements:
-    1. Output VALID, COMPLETE code for every file - NO placeholders
-    2. File specifications:
-       - `package.json`: "type": "module", dependencies: react, react-dom, vite, @vitejs/plugin-react, tailwindcss, autoprefixer, postcss
-       - `vite.config.js`: use `export default defineConfig({{{{ plugins: [...] }}}})``
-       - `postcss.config.js`: use `export default {{{{ plugins: {{{{ tailwindcss: {{}}, autoprefixer: {{}} }}}} }}}}` (ESM syntax)
-       - `tailwind.config.js`: use `export default {{{{ content: [...], theme: {{{{ extend: {{}} }}}}, plugins: [] }}}}` (ESM syntax)
-       - `index.html`: 
-         * MUST include: `<meta name="viewport" content="width=device-width, initial-scale=1.0">`
-         * Element with id="root"
-         * Script type="module" src="/src/main.jsx"
-       - `src/index.css`: `@tailwind base; @tailwind components; @tailwind utilities;`
-       - `src/main.jsx`: 
-         * Must `import './index.css'`
-         * Render App component to root
-       - `src/App.jsx`:
-         * Use "min-h-screen" for full viewport
-         * Use "container mx-auto px-4" for mobile padding
-         * Mobile-first responsive layout
-    
-    COMPONENT STYLING RULES:
-    - Every component MUST use Tailwind classes
-    - Start mobile-first: "w-full md:w-1/2 lg:w-1/3"
-    - Responsive containers: "max-w-7xl mx-auto px-4"
-    - Touch-friendly: "py-3 px-6 min-h-[44px]" for buttons
-    - Proper spacing: "space-y-4 md:space-y-6"
-    
+    system_prompt = """You are an Expert React Developer. Generate complete, working code for every file listed.
+
+    STRICT RULES:
+    - No placeholders, no "// TODO", no stub functions — every file must be production-ready
+    - Every component uses Tailwind exclusively — no inline styles
+    - Mobile-first: write base styles for mobile, add md: and lg: overrides
+    - Buttons and links: always min-h-[44px] for touch targets
+    - Layouts: "min-h-screen" on root, "container mx-auto px-4" for content
+
+    REQUIRED FILE CONFIGS:
+    - package.json: "type": "module", include react, react-dom, vite, @vitejs/plugin-react, tailwindcss, autoprefixer, postcss
+    - vite.config.js: ESM export default defineConfig({ plugins: [react()] })
+    - postcss.config.js: ESM export default { plugins: { tailwindcss: {}, autoprefixer: {} } }
+    - tailwind.config.js: content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}']
+    - index.html: viewport meta tag required, root div, src/main.jsx module script
+    - src/index.css: @tailwind base; @tailwind components; @tailwind utilities;
+    - src/main.jsx: import './index.css', render <App /> to #root
+
     Files to generate: {file_list}
-    
-    Ensure all components export correctly, import correctly, and use mobile-first responsive Tailwind patterns.
-    """
+    Design spec: {design_spec}
+
+    Return only valid JSON matching the ProjectCode schema."""
     
     prompt_template = ChatPromptTemplate.from_messages([
         ("system", system_prompt),

@@ -25,17 +25,16 @@ async def research_agent(state: ProjectState):
         # TODO: Implement actual Tavily call
         pass
         
-    system_prompt = """You are a Product Researcher.
-    Analyze the user's request and provide key insights for building this application.
-    Focus on:
-    1. Core features expected for this type of application.
-    2. Common UI/UX patterns (colors, layout).
-    3. Essential data structures.
-    
-    If the project is a "Barbershop Website", for example, list features like 'Appointment Booking', 'Service Menu', 'Barber Profiles'.
-    
-    Output a structured summary with 5-10 key insights.
-    """
+    system_prompt = """You are a product researcher. Analyze the user's request and return structured insights.
+
+    Return exactly this structure:
+    - features: 5-8 must-have features for this type of app (be specific, e.g. "Booking calendar with time slots" not "Booking")
+    - ui_patterns: 3-5 UI/UX conventions for this domain (layout, navigation style, color mood)
+    - color_palette: suggest 3 Tailwind color classes that fit the domain (e.g. "slate", "emerald", "amber")  
+    - data_structures: 2-4 key data entities and their core fields
+    - inspiration: 1-2 sentence description of the visual feel to aim for
+
+    Be specific to the domain. Generic advice is not useful."""
     
     user_prompt = f"""
     User Request: {prompt}

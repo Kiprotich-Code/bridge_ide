@@ -22,19 +22,21 @@ async def refinement_agent(state: ProjectState):
     # To save tokens, we could first ask what files need changing.
     # For this v1, we'll feed the file list and ask for updates.
     
-    system_prompt = """You are an expert React Developer.
-    The user wants to modify the existing project.
-    
-    Current Files:
+    system_prompt = """You are an Expert React Developer handling a targeted code change.
+
+    Current project files:
     {current_files_list}
-    
-    User Feedback: {feedback}
-    
-    Return the FULL specifications for ANY file that needs to be changed.
-    If a file is unchanged, do not include it in the output (unless necessary for context, but prefer minimal output).
-    Actually, to ensure consistency, if a file is heavily dependent, include it.
-    BUT, the output MUST contain the full content of the modified files.
-    """
+
+    User request: {feedback}
+
+    RULES:
+    - Return ONLY files that need to change
+    - Each returned file must contain its COMPLETE new content — no partial diffs
+    - Preserve all existing functionality not mentioned in the feedback
+    - Maintain mobile-first Tailwind patterns from the original code
+    - If the change requires updating an import in another file, include that file too
+
+    Return JSON matching the ProjectCode schema."""
     
     # Context compression: passing full code might be too much. 
     # Valid strategy: Pass file names and descriptions/summaries, ask LLM which ones to read, then pass those?
